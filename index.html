@@ -1,246 +1,362 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>赵滏城的播放器</title>
-    <link rel="icon" href="https://p3.music.126.net/tBTNafgjNnTL1KlZMt7lVA==/18885211718935735.jpg" type="image/jpeg">
+    <title>单词消消大竞赛</title>
+    <!-- 引入SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
+    <!-- 引入canvas-confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
-        body {
-            background: linear-gradient(135deg, #a8e6cf, #dcedc1);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #3a4f41;
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            padding: 20px;
-        }
-        
-        .player-container {
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            width: min(90vw, 500px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .album-art {
-            width: min(80vw, 400px);
-            height: min(80vw, 400px);
-            border-radius: 15px;
-            margin: 0 auto 20px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            position: relative;
-            pointer-events: none;
-        }
-
-        .album-art::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.2));
-            z-index: 1;
-        }
-
-        .album-art img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-            pointer-events: none;
-        }
-
-        .album-art:hover img {
-            transform: scale(1.05);
-        }
-
-        .song-info {
+        body { 
+            font-family: Arial, sans-serif;
             text-align: center;
-            margin-bottom: 20px;
-            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            margin: 0;
         }
-
-        .song-title {
-            font-size: clamp(24px, 5vw, 32px);
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #2d3436;
+        h1 {
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            font-size: 2.5em;
         }
-
-        .artist {
-            font-size: clamp(16px, 3vw, 20px);
-            color: #636e72;
-        }
-
-        .custom-player {
-            width: 100%;
-            max-width: 400px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        #game {
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: space-around;
+            margin: 30px auto;
+            max-width: 1400px;
+            gap: 60px;
         }
-
-        .controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .area {
+            width: 48%;
+            padding: 25px;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
-            margin-bottom: 15px;
-            width: 100%;
+            min-height: 500px;
         }
-
-        .play-btn {
-            background: rgba(255, 255, 255, 0.3);
+        button {
+            margin: 5px;
+            padding: 20px 25px;
             border: none;
-            width: clamp(60px, 10vw, 80px);
-            height: clamp(60px, 10vw, 80px);
+            border-radius: 10px;
+            background-color: #4CAF50;
+            color: white;
             cursor: pointer;
-            color: #2d3436;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: clamp(24px, 4vw, 32px);
             transition: all 0.3s ease;
-            border-radius: 50%;
-            backdrop-filter: blur(5px);
+            font-size: 23px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
-        .play-btn:hover {
-            transform: scale(1.1);
-            background: rgba(255, 255, 255, 0.4);
-            color: #00b894;
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
         }
-
-        .play-btn i {
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        button.matched {
+            visibility: hidden;
         }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            cursor: pointer;
-            position: relative;
+        #timer {
+            font-size: 32px;
+            margin: 25px 0;
+            color: #2c3e50;
+            font-weight: bold;
         }
-
-        .progress {
-            width: 0%;
-            height: 100%;
-            background: #00b894;
-            border-radius: 5px;
-            transition: width 0.1s linear;
+        #startBtn {
+            font-size: 24px;
+            padding: 20px 50px;
+            background-color: #2196F3;
+            margin-bottom: 25px;
         }
-
-        .progress-bar:hover .progress {
-            background: #00cec9;
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
         }
-
-        .time-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: clamp(12px, 2.5vw, 16px);
-            color: #636e72;
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .player-container {
-                padding: 40px;
-            }
-            
-            .custom-player {
-                padding: 20px;
-            }
+        .button-placeholder {
+            visibility: hidden;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body oncontextmenu="return false">
-    <div class="player-container">
-        <div class="album-art">
-            <img src="https://imgessl.kugou.com/stdmusic/20241104/20241104173449713414.jpg" alt="专辑封面">
-        </div>
-        <div class="song-info">
-            <div class="song-title">明明（深爱着你）</div>
-            <div class="artist">赵滏城</div>
-        </div>
-        <div class="custom-player">
-            <div class="controls">
-                <button class="play-btn" onclick="togglePlay()">
-                    <i class="fas fa-play"></i>
-                </button>
-            </div>
-            <div class="progress-bar" onclick="seek(event)">
-                <div class="progress"></div>
-            </div>
-            <div class="time-info">
-                <span class="current-time">0:00</span>
-                <span class="duration">0:00</span>
-            </div>
+<body>
+    <div class="container">
+        <h1>单词消消大竞赛</h1>
+        <h2>powered by 赵滏城</h2>
+        <div id="timer">时间: <span id="time">0</span>秒</div>
+        <button id="startBtn">开始游戏</button>
+        <div id="game">
+            <div class="area" id="leftArea"></div>
+            <div class="area" id="rightArea"></div>
         </div>
     </div>
 
     <script>
-        const audio = new Audio('https://file.upfile.live/uploads/20241109/69d07caec1801fd3dc70a5a2a3829370.wav');
-        const playBtn = document.querySelector('.play-btn i');
-        const progress = document.querySelector('.progress');
-        const currentTimeSpan = document.querySelector('.current-time');
-        const durationSpan = document.querySelector('.duration');
-        
-        function togglePlay() {
-            if (audio.paused) {
-                audio.play();
-                playBtn.classList.remove('fa-play');
-                playBtn.classList.add('fa-pause');
+        const words = [
+            {english: "informal", chinese: "非正式的"},
+            {english: "serious", chinese: "严肃的"},
+            {english: "confidently", chinese: "自信地"},
+            {english: "lack", chinese: "缺乏，缺少"},
+            {english: "advance", chinese: "预先的，在前的；前进，进展"},
+            {english: "opportunity", chinese: "机会"},
+            {english: "application", chinese: "申请；应用"},
+            {english: "reply", chinese: "回答，答复，回信"},
+            {english: "outspoken", chinese: "直言不讳的，坦率的，不客气的"},
+            {english: "mature", chinese: "成熟的"},
+            {english: "contradict", chinese: "反驳"},
+            {english: "cautious", chinese: "谨慎的，慎重的，小心的"},
+            {english: "hesitate", chinese: "犹豫，迟疑"},
+            {english: "direction", chinese: "方向"},
+            {english: "put down", chinese: "放下，写下；镇压"},
+            {english: "doubt", chinese: "怀疑"},
+            {english: "hold out", chinese: "伸出，维持，坚持"},
+            {english: "long for", chinese: "渴望得到某物"},
+            {english: "appeal", chinese: "吸引力；呼吁，请求；上诉"},
+            {english: "associate", chinese: "使…… 和…… 有联系；联系，联想"},
+            {english: "possession", chinese: "拥有；所有物"},
+            {english: "interpersonal", chinese: "人际关系的"},
+            {english: "trust", chinese: "信赖，信任"},
+            {english: "confront", chinese: "面对（危险、困难）"},
+            {english: "regret", chinese: "后悔，悔恨"},
+            {english: "betray", chinese: "背叛"},
+            {english: "forgive", chinese: "原谅，宽恕"},
+            {english: "slide", chinese: "滑，滑行，滑落"},
+            {english: "clone", chinese: "克隆"},
+            {english: "terrify", chinese: "使惊恐，使受惊吓"},
+            {english: "chase", chinese: "追逐，追赶，追踪"},
+            {english: "disgust", chinese: "使觉得恶心，使厌烦"},
+            {english: "abandon", chinese: "放弃，遗弃"},
+            {english: "accomplish", chinese: "完成，实现"},
+            {english: "admire", chinese: "钦佩，赞赏"},
+            {english: "anxiety", chinese: "焦虑，忧虑"},
+            {english: "appreciate", chinese: "感激，欣赏"},
+            {english: "attitude", chinese: "态度，看法"},
+            {english: "brilliant", chinese: "杰出的，才华横溢的"},
+            {english: "celebrate", chinese: "庆祝，颂扬"},
+            {english: "challenge", chinese: "挑战，质疑"},
+            {english: "determine", chinese: "决定，确定"},
+            {english: "encourage", chinese: "鼓励，支持"},
+            {english: "enthusiasm", chinese: "热情，热心"},
+            {english: "grateful", chinese: "感激的，感谢的"},
+            {english: "harmony", chinese: "和谐，融洽"},
+            {english: "inspire", chinese: "激励，鼓舞"},
+            {english: "journey", chinese: "旅程，旅行"},
+            {english: "knowledge", chinese: "知识，学问"},
+            {english: "leadership", chinese: "领导力，领导地位"},
+            {english: "motivation", chinese: "动力，积极性"},
+            {english: "overcome", chinese: "克服，战胜"},
+            {english: "patience", chinese: "耐心，忍耐"},
+            {english: "potential", chinese: "潜力，可能性"},
+            {english: "respect", chinese: "尊重，敬重"},
+            {english: "success", chinese: "成功，成就"},
+            {english: "wisdom", chinese: "智慧，明智"},
+            // 新增50个词汇
+            {english: "achieve", chinese: "达到，实现"},
+            {english: "believe", chinese: "相信，认为"},
+            {english: "consider", chinese: "考虑，思考"},
+            {english: "develop", chinese: "发展，开发"},
+            {english: "explore", chinese: "探索，探究"},
+            {english: "focus", chinese: "专注，集中"},
+            {english: "growth", chinese: "成长，发展"},
+            {english: "hope", chinese: "希望，期望"},
+            {english: "improve", chinese: "改进，提高"},
+            {english: "joy", chinese: "欢乐，喜悦"},
+            {english: "kindness", chinese: "善良，仁慈"},
+            {english: "learn", chinese: "学习，了解"},
+            {english: "manage", chinese: "管理，处理"},
+            {english: "nature", chinese: "自然，本性"},
+            {english: "observe", chinese: "观察，注意"},
+            {english: "persist", chinese: "坚持，持续"},
+            {english: "quality", chinese: "质量，品质"},
+            {english: "reflect", chinese: "反思，反映"},
+            {english: "share", chinese: "分享，共享"},
+            {english: "transform", chinese: "转变，改变"},
+            {english: "understand", chinese: "理解，明白"},
+            {english: "value", chinese: "价值，重视"},
+            {english: "wonder", chinese: "惊奇，好奇"},
+            {english: "yield", chinese: "产生，屈服"},
+            {english: "zeal", chinese: "热情，热忱"},
+            {english: "balance", chinese: "平衡，均衡"},
+            {english: "create", chinese: "创造，创建"},
+            {english: "dream", chinese: "梦想，梦境"},
+            {english: "effort", chinese: "努力，尝试"},
+            {english: "faith", chinese: "信念，信仰"},
+            {english: "guide", chinese: "指导，引导"},
+            {english: "honest", chinese: "诚实的，正直的"},
+            {english: "impact", chinese: "影响，冲击"},
+            {english: "justice", chinese: "正义，公平"},
+            {english: "kind", chinese: "善良的，友好的"},
+            {english: "love", chinese: "爱，喜爱"},
+            {english: "mind", chinese: "思维，心智"},
+            {english: "noble", chinese: "高尚的，贵族的"},
+            {english: "open", chinese: "开放的，坦率的"},
+            {english: "peace", chinese: "和平，安宁"},
+            {english: "quiet", chinese: "安静的，平静的"},
+            {english: "reason", chinese: "理由，原因"},
+            {english: "simple", chinese: "简单的，简易的"},
+            {english: "time", chinese: "时间，时刻"},
+            {english: "unity", chinese: "团结，统一"},
+            {english: "vision", chinese: "视野，远见"},
+            {english: "warm", chinese: "温暖的，热情的"},
+            {english: "xanthous", chinese: "黄色的"},
+            {english: "young", chinese: "年轻的，青年的"},
+            {english: "zealous", chinese: "热心的，热情的"}
+        ];
+
+        let timer;
+        let timeElapsed = 0;
+        let selectedButtons = {left: null, right: null};
+        let matchedPairs = {left: new Set(), right: new Set()};
+        let gameActive = false;
+
+        function startGame() {
+            if(gameActive) return;
+            gameActive = true;
+            timeElapsed = 0;
+            matchedPairs = {left: new Set(), right: new Set()};
+            selectedButtons = {left: null, right: null};
+            document.getElementById("time").innerText = timeElapsed;
+            document.getElementById("leftArea").innerHTML = '';
+            document.getElementById("rightArea").innerHTML = '';
+            document.getElementById("startBtn").innerText = "游戏中...";
+            startTimer();
+            generateWords();
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeElapsed++;
+                document.getElementById("time").innerText = timeElapsed;
+            }, 1000);
+        }
+
+        function generateWords() {
+            const leftWords = [...words].sort(() => 0.5 - Math.random()).slice(0, 6);
+            const rightWords = [...words].sort(() => 0.5 - Math.random())
+                .filter(w => !leftWords.includes(w)).slice(0, 6);
+            
+            displayWords(leftWords, 'leftArea', 'left');
+            displayWords(rightWords, 'rightArea', 'right');
+        }
+
+        function displayWords(wordList, areaId, side) {
+            const area = document.getElementById(areaId);
+            const buttons = [];
+            
+            // 创建英文按钮
+            wordList.forEach(word => {
+                const engBtn = document.createElement('button');
+                engBtn.innerText = word.english;
+                engBtn.dataset.pair = word.english;
+                engBtn.dataset.type = 'english';
+                engBtn.onclick = () => handleWordClick(engBtn, side, word);
+                buttons.push(engBtn);
+            });
+
+            // 创建中文按钮
+            wordList.forEach(word => {
+                const cnBtn = document.createElement('button');
+                cnBtn.innerText = word.chinese;
+                cnBtn.dataset.pair = word.english;
+                cnBtn.dataset.type = 'chinese';
+                cnBtn.onclick = () => handleWordClick(cnBtn, side, word);
+                buttons.push(cnBtn);
+            });
+
+            // 随机排序并添加到区域
+            buttons.sort(() => 0.5 - Math.random())
+                .forEach(btn => area.appendChild(btn));
+        }
+
+        function handleWordClick(button, side, word) {
+            if(!gameActive || button.classList.contains('matched')) return;
+
+            if(selectedButtons[side]) {
+                if(selectedButtons[side].dataset.pair === button.dataset.pair && 
+                   selectedButtons[side].dataset.type !== button.dataset.type) {
+                    // 匹配成功
+                    selectedButtons[side].classList.add('matched');
+                    button.classList.add('matched');
+                    matchedPairs[side].add(word.english);
+                    selectedButtons[side] = null;
+                    
+                    if(matchedPairs[side].size === 6) {
+                        gameOver(side);
+                    }
+                } else {
+                    // 不匹配，重置选中状态
+                    selectedButtons[side].style.backgroundColor = '#4CAF50';
+                    selectedButtons[side] = button;
+                    button.style.backgroundColor = '#FFA500';
+                }
             } else {
-                audio.pause();
-                playBtn.classList.remove('fa-pause');
-                playBtn.classList.add('fa-play');
+                selectedButtons[side] = button;
+                button.style.backgroundColor = '#FFA500';
             }
         }
 
-        function seek(event) {
-            const progressBar = document.querySelector('.progress-bar');
-            const percent = event.offsetX / progressBar.offsetWidth;
-            audio.currentTime = percent * audio.duration;
+        function fireworksEffect() {
+            const duration = 5 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            function randomInRange(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+
+                if (timeLeft <= 0) {
+                    return clearInterval(interval);
+                }
+
+                const particleCount = 50 * (timeLeft / duration);
+                
+                confetti(Object.assign({}, defaults, {
+                    particleCount,
+                    origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                }));
+                confetti(Object.assign({}, defaults, {
+                    particleCount,
+                    origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                }));
+            }, 250);
         }
 
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            seconds = Math.floor(seconds % 60);
-            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        function gameOver(side) {
+            gameActive = false;
+            clearInterval(timer);
+            document.getElementById("startBtn").innerText = "再来一局";
+            
+            const otherSide = side === 'left' ? 'right' : 'left';
+            
+            // 触发烟花特效
+            fireworksEffect();
+
+            Swal.fire({
+                title: `${side === 'left' ? '左' : '右'}侧选手获胜！`,
+                text: `用时 ${timeElapsed} 秒`,
+                icon: 'success',
+                confirmButtonText: '再来一局'
+            });
+
+            if(matchedPairs[otherSide].size < 6) {
+                Swal.fire({
+                    title: `${otherSide === 'left' ? '左' : '右'}侧选手失败！`,
+                    text: '失败者收到了作者的鼓励：相信你可以的！',
+                    icon: 'error',
+                    confirmButtonText: '好的呀٩(•̤̀ᵕ•̤́๑)'
+                });
+            }
         }
 
-        audio.addEventListener('timeupdate', () => {
-            const percent = (audio.currentTime / audio.duration) * 100;
-            progress.style.width = percent + '%';
-            currentTimeSpan.textContent = formatTime(audio.currentTime);
-        });
-
-        audio.addEventListener('loadedmetadata', () => {
-            durationSpan.textContent = formatTime(audio.duration);
-        });
+        document.getElementById("startBtn").onclick = startGame;
     </script>
 </body>
 </html>
