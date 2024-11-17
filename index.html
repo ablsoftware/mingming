@@ -26,13 +26,22 @@
         }
         #game {
             display: flex;
-            justify-content: space-around;
+            flex-direction: column;
+            align-items: center;
             margin: 30px auto;
             max-width: 1400px;
-            gap: 60px;
+            gap: 30px;
+        }
+        @media (min-width: 1024px) {
+            #game {
+                flex-direction: row;
+                justify-content: space-around;
+                gap: 60px;
+            }
         }
         .area {
-            width: 48%;
+            width: 100%;
+            max-width: 600px;
             padding: 25px;
             border-radius: 15px;
             background: white;
@@ -41,6 +50,11 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
             min-height: 500px;
+        }
+        @media (min-width: 1024px) {
+            .area {
+                width: 48%;
+            }
         }
         button {
             margin: 5px;
@@ -68,19 +82,102 @@
             color: #2c3e50;
             font-weight: bold;
         }
-        #startBtn {
+        #startBtn, #showAnswerBtn {
             font-size: 24px;
             padding: 20px 50px;
             background-color: #2196F3;
             margin-bottom: 25px;
         }
+        #showAnswerBtn {
+            background-color: #FF9800;
+            margin-left: 10px;
+            display: none;
+        }
         .container {
             max-width: 1600px;
             margin: 0 auto;
-            padding: 30px;
+            padding: 15px;
         }
         .button-placeholder {
             visibility: hidden;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            button {
+                font-size: 18px;
+                padding: 15px 20px;
+            }
+            h1 {
+                font-size: 2em;
+            }
+        }
+        /* 新增答案展示样式 */
+        .answer-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px;
+            text-align: left;
+        }
+        .answer-side {
+            width: 45%;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .answer-title {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: bold;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 5px;
+        }
+        .answer-pair {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px;
+            background: #f5f7fa;
+            border-radius: 5px;
+        }
+        .answer-english {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        .answer-chinese {
+            color: #FF9800;
+        }
+        /* 添加难度选择按钮样式 */
+        .difficulty-btn {
+            margin: 10px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .difficulty-btn[data-difficulty="easy"] {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .difficulty-btn[data-difficulty="medium"] {
+            background-color: #FFA500;
+            color: white;
+        }
+        .difficulty-btn[data-difficulty="hard"] {
+            background-color: #FF4444;
+            color: white;
+        }
+        .difficulty-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .difficulty-btn:focus {
+            outline: 3px solid #2196F3;
         }
     </style>
 </head>
@@ -90,6 +187,7 @@
         <h2>powered by 赵滏城</h2>
         <div id="timer">时间: <span id="time">0</span>秒</div>
         <button id="startBtn">开始游戏</button>
+        <button id="showAnswerBtn">查看答案</button>
         <div id="game">
             <div class="area" id="leftArea"></div>
             <div class="area" id="rightArea"></div>
@@ -97,125 +195,137 @@
     </div>
 
     <script>
-        const words = [
-            {english: "informal", chinese: "非正式的"},
-            {english: "serious", chinese: "严肃的"},
-            {english: "confidently", chinese: "自信地"},
-            {english: "lack", chinese: "缺乏，缺少"},
-            {english: "advance", chinese: "预先的，在前的；前进，进展"},
-            {english: "opportunity", chinese: "机会"},
-            {english: "application", chinese: "申请；应用"},
-            {english: "reply", chinese: "回答，答复，回信"},
-            {english: "outspoken", chinese: "直言不讳的，坦率的，不客气的"},
-            {english: "mature", chinese: "成熟的"},
-            {english: "contradict", chinese: "反驳"},
-            {english: "cautious", chinese: "谨慎的，慎重的，小心的"},
-            {english: "hesitate", chinese: "犹豫，迟疑"},
-            {english: "direction", chinese: "方向"},
-            {english: "put down", chinese: "放下，写下；镇压"},
-            {english: "doubt", chinese: "怀疑"},
-            {english: "hold out", chinese: "伸出，维持，坚持"},
-            {english: "long for", chinese: "渴望得到某物"},
-            {english: "appeal", chinese: "吸引力；呼吁，请求；上诉"},
-            {english: "associate", chinese: "使…… 和…… 有联系；联系，联想"},
-            {english: "possession", chinese: "拥有；所有物"},
-            {english: "interpersonal", chinese: "人际关系的"},
-            {english: "trust", chinese: "信赖，信任"},
-            {english: "confront", chinese: "面对（危险、困难）"},
-            {english: "regret", chinese: "后悔，悔恨"},
-            {english: "betray", chinese: "背叛"},
-            {english: "forgive", chinese: "原谅，宽恕"},
-            {english: "slide", chinese: "滑，滑行，滑落"},
-            {english: "clone", chinese: "克隆"},
-            {english: "terrify", chinese: "使惊恐，使受惊吓"},
-            {english: "chase", chinese: "追逐，追赶，追踪"},
-            {english: "disgust", chinese: "使觉得恶心，使厌烦"},
-            {english: "abandon", chinese: "放弃，遗弃"},
-            {english: "accomplish", chinese: "完成，实现"},
-            {english: "admire", chinese: "钦佩，赞赏"},
-            {english: "anxiety", chinese: "焦虑，忧虑"},
-            {english: "appreciate", chinese: "感激，欣赏"},
-            {english: "attitude", chinese: "态度，看法"},
-            {english: "brilliant", chinese: "杰出的，才华横溢的"},
-            {english: "celebrate", chinese: "庆祝，颂扬"},
-            {english: "challenge", chinese: "挑战，质疑"},
-            {english: "determine", chinese: "决定，确定"},
-            {english: "encourage", chinese: "鼓励，支持"},
-            {english: "enthusiasm", chinese: "热情，热心"},
-            {english: "grateful", chinese: "感激的，感谢的"},
-            {english: "harmony", chinese: "和谐，融洽"},
-            {english: "inspire", chinese: "激励，鼓舞"},
-            {english: "journey", chinese: "旅程，旅行"},
-            {english: "knowledge", chinese: "知识，学问"},
-            {english: "leadership", chinese: "领导力，领导地位"},
-            {english: "motivation", chinese: "动力，积极性"},
-            {english: "overcome", chinese: "克服，战胜"},
-            {english: "patience", chinese: "耐心，忍耐"},
-            {english: "potential", chinese: "潜力，可能性"},
-            {english: "respect", chinese: "尊重，敬重"},
-            {english: "success", chinese: "成功，成就"},
-            {english: "wisdom", chinese: "智慧，明智"},
-            // 新增50个词汇
-            {english: "achieve", chinese: "达到，实现"},
-            {english: "believe", chinese: "相信，认为"},
-            {english: "consider", chinese: "考虑，思考"},
-            {english: "develop", chinese: "发展，开发"},
-            {english: "explore", chinese: "探索，探究"},
-            {english: "focus", chinese: "专注，集中"},
-            {english: "growth", chinese: "成长，发展"},
-            {english: "hope", chinese: "希望，期望"},
-            {english: "improve", chinese: "改进，提高"},
-            {english: "joy", chinese: "欢乐，喜悦"},
-            {english: "kindness", chinese: "善良，仁慈"},
-            {english: "learn", chinese: "学习，了解"},
-            {english: "manage", chinese: "管理，处理"},
-            {english: "nature", chinese: "自然，本性"},
-            {english: "observe", chinese: "观察，注意"},
-            {english: "persist", chinese: "坚持，持续"},
-            {english: "quality", chinese: "质量，品质"},
-            {english: "reflect", chinese: "反思，反映"},
-            {english: "share", chinese: "分享，共享"},
-            {english: "transform", chinese: "转变，改变"},
-            {english: "understand", chinese: "理解，明白"},
-            {english: "value", chinese: "价值，重视"},
-            {english: "wonder", chinese: "惊奇，好奇"},
-            {english: "yield", chinese: "产生，屈服"},
-            {english: "zeal", chinese: "热情，热忱"},
-            {english: "balance", chinese: "平衡，均衡"},
-            {english: "create", chinese: "创造，创建"},
-            {english: "dream", chinese: "梦想，梦境"},
-            {english: "effort", chinese: "努力，尝试"},
-            {english: "faith", chinese: "信念，信仰"},
-            {english: "guide", chinese: "指导，引导"},
-            {english: "honest", chinese: "诚实的，正直的"},
-            {english: "impact", chinese: "影响，冲击"},
-            {english: "justice", chinese: "正义，公平"},
-            {english: "kind", chinese: "善良的，友好的"},
-            {english: "love", chinese: "爱，喜爱"},
-            {english: "mind", chinese: "思维，心智"},
-            {english: "noble", chinese: "高尚的，贵族的"},
-            {english: "open", chinese: "开放的，坦率的"},
-            {english: "peace", chinese: "和平，安宁"},
-            {english: "quiet", chinese: "安静的，平静的"},
-            {english: "reason", chinese: "理由，原因"},
-            {english: "simple", chinese: "简单的，简易的"},
-            {english: "time", chinese: "时间，时刻"},
-            {english: "unity", chinese: "团结，统一"},
-            {english: "vision", chinese: "视野，远见"},
-            {english: "warm", chinese: "温暖的，热情的"},
-            {english: "xanthous", chinese: "黄色的"},
-            {english: "young", chinese: "年轻的，青年的"},
-            {english: "zealous", chinese: "热心的，热情的"}
-        ];
+        const words = {
+            easy: [
+                {english: "achieve", chinese: "达到，实现"},
+                {english: "benefit", chinese: "好处，利益"},
+                {english: "consider", chinese: "考虑，认为"},
+                {english: "develop", chinese: "发展，开发"},
+                {english: "encourage", chinese: "鼓励"},
+                {english: "familiar", chinese: "熟悉的"},
+                {english: "generate", chinese: "产生，生成"},
+                {english: "hesitate", chinese: "犹豫"},
+                {english: "indicate", chinese: "指示，表明"},
+                {english: "journey", chinese: "旅程"},
+                {english: "knowledge", chinese: "知识"},
+                {english: "maintain", chinese: "维持，保持"},
+                {english: "necessary", chinese: "必要的"},
+                {english: "observe", chinese: "观察"},
+                {english: "prepare", chinese: "准备"},
+                {english: "quality", chinese: "质量，品质"},
+                {english: "appreciate", chinese: "欣赏，感激"},
+                {english: "communicate", chinese: "交流，沟通"},
+                {english: "determine", chinese: "决定，确定"},
+                {english: "establish", chinese: "建立，设立"},
+                {english: "fortunate", chinese: "幸运的"},
+                {english: "gradually", chinese: "逐渐地"},
+                {english: "identify", chinese: "识别，确认"},
+                {english: "majority", chinese: "大多数"},
+                {english: "organize", chinese: "组织，安排"},
+                {english: "participate", chinese: "参与"},
+                {english: "recommend", chinese: "推荐"},
+                {english: "specific", chinese: "具体的，特定的"},
+                {english: "technology", chinese: "技术"},
+                {english: "valuable", chinese: "有价值的"},
+                {english: "volunteer", chinese: "志愿者"}
+            ],
+            medium: [
+                {english: "accomplish", chinese: "完成，实现"},
+                {english: "circumstance", chinese: "环境，情况"},
+                {english: "demonstrate", chinese: "证明，展示"},
+                {english: "eliminate", chinese: "消除，排除"},
+                {english: "fundamental", chinese: "基本的，根本的"},
+                {english: "guarantee", chinese: "保证，担保"},
+                {english: "implement", chinese: "实施，执行"},
+                {english: "investigate", chinese: "调查，研究"},
+                {english: "magnificent", chinese: "宏伟的，壮丽的"},
+                {english: "negotiate", chinese: "谈判，协商"},
+                {english: "overcome", chinese: "克服，战胜"},
+                {english: "perspective", chinese: "观点，看法"},
+                {english: "remarkable", chinese: "显著的，非凡的"},
+                {english: "significant", chinese: "重要的，显著的"},
+                {english: "tremendous", chinese: "巨大的，惊人的"},
+                {english: "ultimate", chinese: "最终的，极限的"},
+                {english: "anticipate", chinese: "预期，预料"},
+                {english: "characteristic", chinese: "特征的，典型的"},
+                {english: "controversial", chinese: "有争议的"},
+                {english: "distinguish", chinese: "区分，辨别"},
+                {english: "enthusiasm", chinese: "热情，热忱"},
+                {english: "facilitate", chinese: "促进，使容易"},
+                {english: "inevitable", chinese: "不可避免的"},
+                {english: "mechanism", chinese: "机制，原理"},
+                {english: "optimistic", chinese: "乐观的"},
+                {english: "persistent", chinese: "持续的，坚持的"},
+                {english: "rational", chinese: "理性的"},
+                {english: "sophisticated", chinese: "复杂的，精密的"},
+                {english: "sustainable", chinese: "可持续的"},
+                {english: "theoretical", chinese: "理论的"},
+                {english: "versatile", chinese: "多才多艺的"}
+            ],
+            hard: [
+                {english: "assimilate", chinese: "吸收，同化"},
+                {english: "bureaucracy", chinese: "官僚主义"},
+                {english: "contemplate", chinese: "沉思，考虑"},
+                {english: "deteriorate", chinese: "恶化，退化"},
+                {english: "empirical", chinese: "经验主义的"},
+                {english: "fluctuate", chinese: "波动，变化"},
+                {english: "gratitude", chinese: "感激，谢意"},
+                {english: "hierarchy", chinese: "等级制度"},
+                {english: "imperative", chinese: "必要的，紧急的"},
+                {english: "jurisdiction", chinese: "司法权，管辖权"},
+                {english: "legitimate", chinese: "合法的，正当的"},
+                {english: "manipulate", chinese: "操纵，控制"},
+                {english: "notorious", chinese: "臭名昭著的"},
+                {english: "obsolete", chinese: "过时的，废弃的"},
+                {english: "pragmatic", chinese: "实用的，务实的"},
+                {english: "reciprocal", chinese: "相互的，互惠的"},
+                {english: "autonomous", chinese: "自主的，自治的"},
+                {english: "catastrophic", chinese: "灾难性的"},
+                {english: "deliberate", chinese: "故意的，深思熟虑的"},
+                {english: "exemplify", chinese: "例证，作为...的典型"},
+                {english: "formidable", chinese: "可怕的，难对付的"},
+                {english: "heterogeneous", chinese: "异质的，不同种类的"},
+                {english: "indigenous", chinese: "本土的，原生的"},
+                {english: "meticulous", chinese: "一丝不苟的"},
+                {english: "paradigm", chinese: "范例，模式"},
+                {english: "retrospective", chinese: "回顾的，追溯的"},
+                {english: "spontaneous", chinese: "自发的，自然的"},
+                {english: "tentative", chinese: "暂时的，试验性的"},
+                {english: "unprecedented", chinese: "空前的，前所未有的"},
+                {english: "vindicate", chinese: "证明...正确"},
+                {english: "zealous", chinese: "热心的，热情的"}
+            ]
+        };
 
         let timer;
         let timeElapsed = 0;
         let selectedButtons = {left: null, right: null};
         let matchedPairs = {left: new Set(), right: new Set()};
         let gameActive = false;
+        let currentGameWords = {left: [], right: []};
 
         function startGame() {
             if(gameActive) return;
+            
+            Swal.fire({
+                title: '选择难度',
+                html: `
+                    <button onclick="Swal.clickConfirm()" class="difficulty-btn" data-difficulty="easy">简单</button>
+                    <button onclick="Swal.clickConfirm()" class="difficulty-btn" data-difficulty="medium">中等</button>
+                    <button onclick="Swal.clickConfirm()" class="difficulty-btn" data-difficulty="hard">困难</button>
+                `,
+                showConfirmButton: false,
+                preConfirm: () => {
+                    return document.querySelector('.difficulty-btn:focus')?.dataset.difficulty || 'medium';
+                }
+            }).then((result) => {
+                if (result.value) {
+                    initializeGame(result.value);
+                }
+            });
+        }
+
+        function initializeGame(difficulty) {
             gameActive = true;
             timeElapsed = 0;
             matchedPairs = {left: new Set(), right: new Set()};
@@ -224,8 +334,9 @@
             document.getElementById("leftArea").innerHTML = '';
             document.getElementById("rightArea").innerHTML = '';
             document.getElementById("startBtn").innerText = "游戏中...";
+            document.getElementById("showAnswerBtn").style.display = "none";
             startTimer();
-            generateWords();
+            generateWords(difficulty);
         }
 
         function startTimer() {
@@ -235,11 +346,15 @@
             }, 1000);
         }
 
-        function generateWords() {
-            const leftWords = [...words].sort(() => 0.5 - Math.random()).slice(0, 6);
-            const rightWords = [...words].sort(() => 0.5 - Math.random())
-                .filter(w => !leftWords.includes(w)).slice(0, 6);
+        function generateWords(difficulty = 'medium') {
+            const wordPool = words[difficulty];
+            const leftWords = [...wordPool].sort(() => 0.5 - Math.random()).slice(0, 6);
+            const rightWords = [...wordPool]
+                .filter(w => !leftWords.includes(w))
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 6);
             
+            currentGameWords = {left: leftWords, right: rightWords};
             displayWords(leftWords, 'leftArea', 'left');
             displayWords(rightWords, 'rightArea', 'right');
         }
@@ -300,10 +415,42 @@
             }
         }
 
+        function showAnswers() {
+            const answerHtml = `
+                <div class="answer-container">
+                    <div class="answer-side">
+                        <div class="answer-title">左侧答案</div>
+                        ${currentGameWords.left.map(word => `
+                            <div class="answer-pair">
+                                <span class="answer-english">${word.english}</span>
+                                <span class="answer-chinese">${word.chinese}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="answer-side">
+                        <div class="answer-title">右侧答案</div>
+                        ${currentGameWords.right.map(word => `
+                            <div class="answer-pair">
+                                <span class="answer-english">${word.english}</span>
+                                <span class="answer-chinese">${word.chinese}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            Swal.fire({
+                title: '本局游戏答案',
+                html: answerHtml,
+                width: '80%',
+                confirmButtonText: 'ok学废了！'
+            });
+        }
+
         function fireworksEffect() {
-            const duration = 5 * 1000;
+            const duration = 6 * 1000;
             const animationEnd = Date.now() + duration;
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
 
             function randomInRange(min, max) {
                 return Math.random() * (max - min) + min;
@@ -333,6 +480,7 @@
             gameActive = false;
             clearInterval(timer);
             document.getElementById("startBtn").innerText = "再来一局";
+            document.getElementById("showAnswerBtn").style.display = "inline-block";
             
             const otherSide = side === 'left' ? 'right' : 'left';
             
@@ -340,7 +488,7 @@
             fireworksEffect();
 
             Swal.fire({
-                title: `${side === 'left' ? '左' : '右'}侧选手获胜！`,
+                title: `🎉用时 ${timeElapsed} 秒，${side === 'left' ? '左' : '右'}侧选手获胜！`,
                 text: `用时 ${timeElapsed} 秒`,
                 icon: 'success',
                 confirmButtonText: '再来一局'
@@ -348,15 +496,16 @@
 
             if(matchedPairs[otherSide].size < 6) {
                 Swal.fire({
-                    title: `${otherSide === 'left' ? '左' : '右'}侧选手失败！`,
-                    text: '失败者收到了作者的鼓励：相信你可以的！',
-                    icon: 'error',
+                    title: `🎉用时 ${timeElapsed} 秒，${otherSide === 'left' ? '左' : '右'}侧选手失败！`,
+                    text: `失败者收到了作者的鼓励：相信你可以的！`,
+                    icon: 'success',
                     confirmButtonText: '好的呀٩(•̤̀ᵕ•̤́๑)'
                 });
             }
         }
 
         document.getElementById("startBtn").onclick = startGame;
+        document.getElementById("showAnswerBtn").onclick = showAnswers;
     </script>
 </body>
 </html>
