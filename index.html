@@ -1,511 +1,488 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
+    <!-- 基础元数据设置 -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>单词消消大竞赛</title>
-    <!-- 引入SweetAlert2 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.all.min.js"></script>
-    <!-- 引入canvas-confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>问卷调查</title>
+    
+    <!-- 引入外部样式库：
+         - Tailwind CSS：用于快速构建UI
+         - Animate.css：用于添加动画效果 -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+    
     <style>
-        body { 
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            margin: 0;
+        /* 表单部分的基础样式 */
+        .form-section {
+            display: block;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
         }
-        h1 {
-            color: #2c3e50;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            font-size: 2.5em;
+        
+        /* 可见状态 */
+        .form-section.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
-        #game {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 30px auto;
-            max-width: 1400px;
-            gap: 30px;
-        }
-        @media (min-width: 1024px) {
-            #game {
-                flex-direction: row;
-                justify-content: space-around;
-                gap: 60px;
-            }
-        }
-        .area {
-            width: 100%;
-            max-width: 600px;
-            padding: 25px;
-            border-radius: 15px;
-            background: white;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            min-height: 500px;
-        }
-        @media (min-width: 1024px) {
-            .area {
-                width: 48%;
-            }
-        }
-        button {
-            margin: 5px;
-            padding: 20px 25px;
-            border: none;
-            border-radius: 10px;
-            background-color: #4CAF50;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 23px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        button:hover {
-            background-color: #45a049;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
-        }
-        button.matched {
-            visibility: hidden;
-        }
-        #timer {
-            font-size: 32px;
-            margin: 25px 0;
-            color: #2c3e50;
-            font-weight: bold;
-        }
-        #startBtn, #showAnswerBtn {
-            font-size: 24px;
-            padding: 20px 50px;
-            background-color: #2196F3;
-            margin-bottom: 25px;
-        }
-        #showAnswerBtn {
-            background-color: #FF9800;
-            margin-left: 10px;
+
+        /* 隐藏类 */
+        .hidden {
             display: none;
         }
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 15px;
+
+        /* 成功页面和已提交提示的默认状态 */
+        #successPage,
+        #alreadySubmitted {
+            display: none;
         }
-        .button-placeholder {
-            visibility: hidden;
-        }
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            button {
-                font-size: 18px;
-                padding: 15px 20px;
-            }
-            h1 {
-                font-size: 2em;
-            }
-        }
-        /* 新增答案展示样式 */
-        .answer-container {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px;
-            text-align: left;
-        }
-        .answer-side {
-            width: 45%;
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .answer-title {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-weight: bold;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 5px;
-        }
-        .answer-pair {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            padding: 8px;
-            background: #f5f7fa;
-            border-radius: 5px;
-        }
-        .answer-english {
-            color: #2196F3;
-            font-weight: bold;
-        }
-        .answer-chinese {
-            color: #FF9800;
-        }
-        /* 添加难度选择按钮样式 */
-        .difficulty-btn {
-            margin: 10px;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .difficulty-btn[data-difficulty="easy"] {
-            background-color: #4CAF50;
+
+        /* 单选按钮选中状态的样式 */
+        .custom-radio input:checked + label {
+            background-color: #4F46E5;
             color: white;
         }
-        .difficulty-btn[data-difficulty="medium"] {
-            background-color: #FFA500;
-            color: white;
-        }
-        .difficulty-btn[data-difficulty="hard"] {
-            background-color: #FF4444;
-            color: white;
-        }
-        .difficulty-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .difficulty-btn:focus {
-            outline: 3px solid #2196F3;
+
+        /* 进度条动画效果 */
+        .progress-bar {
+            transition: width 0.3s ease;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>单词消消大竞赛</h1>
-        <h2>powered by 赵滏城</h2>
-        <div id="timer">时间: <span id="time">0</span>秒</div>
-        <button id="startBtn">开始游戏</button>
-        <button id="showAnswerBtn">查看答案</button>
-        <div id="game">
-            <div class="area" id="leftArea"></div>
-            <div class="area" id="rightArea"></div>
+<body class="bg-gray-50" oncontextmenu="return false">
+    <!-- 顶部进度条：显示表单填写进度 -->
+    <div class="fixed top-0 left-0 w-full h-1 bg-gray-200">
+        <div id="progressBar" class="progress-bar h-full bg-indigo-600" style="width: 0%"></div>
+    </div>
+
+    <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+            <!-- 问卷表单容器 -->
+            <div id="surveyForm-container" class="block">
+                <!-- 问卷标题 -->
+                <div class="text-center mb-12 animate__animated animate__fadeInDown">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-4">问卷调查</h1>
+                    <p class="text-lg text-gray-600">感谢您参与本次调查，您的反馈对我们非常重要</p>
+                </div>
+
+                <form id="surveyForm" action="https://formspree.io/f/mknegbar" method="POST">
+                    <!-- 添加隐藏字段来处理 AJAX 提交 -->
+                    <input type="hidden" name="_next" value="#"> <!-- 防止跳转 -->
+                    <input type="hidden" name="_format" value="json">
+                    
+                    <!-- 基本信息部分 -->
+                    <div class="form-section mb-10" data-section="1">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">基本信息</h2>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    姓名
+                                </label>
+                                <input type="text" name="name" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    邮箱
+                                </label>
+                                <input type="email" name="email" required
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    年龄段
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div class="custom-radio">
+                                        <input type="radio" id="age1" name="age" value="18-25" class="hidden" required>
+                                        <label for="age1" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            18-25岁
+                                        </label>
+                                    </div>
+                                    <div class="custom-radio">
+                                        <input type="radio" id="age2" name="age" value="26-35" class="hidden">
+                                        <label for="age2" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            26-35岁
+                                        </label>
+                                    </div>
+                                    <div class="custom-radio">
+                                        <input type="radio" id="age3" name="age" value="36-45" class="hidden">
+                                        <label for="age3" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            36-45岁
+                                        </label>
+                                    </div>
+                                    <div class="custom-radio">
+                                        <input type="radio" id="age4" name="age" value="46+" class="hidden">
+                                        <label for="age4" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            46岁以上
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 调查问题部分 -->
+                    <div class="form-section mb-10" data-section="2">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">调查问题</h2>
+                        
+                        <div class="space-y-8">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                    1. 您对我们的产品满意度如何？
+                                </label>
+                                <div class="flex flex-wrap gap-4">
+                                    <div class="custom-radio">
+                                        <input type="radio" id="satisfaction1" name="satisfaction" value="很满意" class="hidden" required>
+                                        <label for="satisfaction1" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            很满意
+                                        </label>
+                                    </div>
+                                    <div class="custom-radio">
+                                        <input type="radio" id="satisfaction2" name="satisfaction" value="满意" class="hidden">
+                                        <label for="satisfaction2" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            满意
+                                        </label>
+                                    </div>
+                                    <div class="custom-radio">
+                                        <input type="radio" id="satisfaction3" name="satisfaction" value="一般" class="hidden">
+                                        <label for="satisfaction3" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            一般
+                                        </label>
+                                    </div>
+                                    <div class="custom-radio">
+                                        <input type="radio" id="satisfaction4" name="satisfaction" value="不满意" class="hidden">
+                                        <label for="satisfaction4" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
+                                            不满意
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                    2. 您最看重产品的哪些方面？（可多选）
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" name="aspects[]" value="quality" 
+                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <span>产品质量</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" name="aspects[]" value="price"
+                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <span>价格</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" name="aspects[]" value="service"
+                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <span>服务</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" name="aspects[]" value="design"
+                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <span>设计</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3">
+                                        <input type="checkbox" name="aspects[]" value="brand"
+                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                        <span>品牌</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                    3. 您对我们的建议和反馈
+                                </label>
+                                <textarea name="feedback" rows="4" 
+                                          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                          placeholder="请输入您的建议..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 人机验证部分：简单的加法验证 -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-center space-x-4">
+                            <!-- 验证码计算部分 -->
+                            <div class="flex items-center space-x-2">
+                                <label class="text-sm font-medium text-gray-700">验证码：</label>
+                                <div class="flex items-center space-x-2">
+                                    <span id="captchaNum1" class="text-lg"></span>
+                                    <span class="text-lg">+</span>
+                                    <span id="captchaNum2" class="text-lg"></span>
+                                    <span class="text-lg">=</span>
+                                    <input type="number" 
+                                           name="captcha" 
+                                           required
+                                           class="w-16 px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </div>
+
+                            <!-- 刷新验证码按钮 -->
+                            <button type="button" 
+                                    id="generateCaptcha" 
+                                    class="px-4 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                刷新验证码
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 提交按钮 -->
+                    <div class="text-center">
+                        <button type="submit" 
+                                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            提交问卷
+                            <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 成功页面 -->
+            <div id="successPage" class="hidden animate__animated animate__fadeIn">
+                <div class="text-center py-16 px-4 sm:px-6 lg:px-8">
+                    <!-- 这里替换为你的 logo -->
+                    <svg class="mx-auto h-24 w-24 text-green-500 mb-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    
+                    <h2 class="text-4xl font-bold text-gray-900 mb-8">提交成功！</h2>
+                    <div class="max-w-xl mx-auto">
+                        <p class="text-xl text-gray-600 mb-4">感谢您的参与</p>
+                        <p class="text-lg text-gray-500 mb-12">您的反馈对我们非常重要</p>
+                        
+                        <button onclick="window.location.reload()" 
+                                class="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            返回首页
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 在主容器开始处添加已提交提示 -->
+            <div id="alreadySubmitted" class="hidden animate__animated animate__fadeIn text-center py-16 px-4 sm:px-6 lg:px-8">
+                <svg class="mx-auto h-24 w-24 text-yellow-500 mb-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <h2 class="text-4xl font-bold text-gray-900 mb-8">您已经提交过问卷</h2>
+                <p class="text-xl text-gray-600 mb-4">每个浏览器只能提交一次问卷</p>
+                <p class="text-lg text-gray-500 mb-12">感谢您的参与！</p>
+            </div>
         </div>
     </div>
 
     <script>
-        const words = {
-            easy: [
-                {english: "achieve", chinese: "达到，实现"},
-                {english: "benefit", chinese: "好处，利益"},
-                {english: "consider", chinese: "考虑，认为"},
-                {english: "develop", chinese: "发展，开发"},
-                {english: "encourage", chinese: "鼓励"},
-                {english: "familiar", chinese: "熟悉的"},
-                {english: "generate", chinese: "产生，生成"},
-                {english: "hesitate", chinese: "犹豫"},
-                {english: "indicate", chinese: "指示，表明"},
-                {english: "journey", chinese: "旅程"},
-                {english: "knowledge", chinese: "知识"},
-                {english: "maintain", chinese: "维持，保持"},
-                {english: "necessary", chinese: "必要的"},
-                {english: "observe", chinese: "观察"},
-                {english: "prepare", chinese: "准备"},
-                {english: "quality", chinese: "质量，品质"},
-                {english: "appreciate", chinese: "欣赏，感激"},
-                {english: "communicate", chinese: "交流，沟通"},
-                {english: "determine", chinese: "决定，确定"},
-                {english: "establish", chinese: "建立，设立"},
-                {english: "fortunate", chinese: "幸运的"},
-                {english: "gradually", chinese: "逐渐地"},
-                {english: "identify", chinese: "识别，确认"},
-                {english: "majority", chinese: "大多数"},
-                {english: "organize", chinese: "组织，安排"},
-                {english: "participate", chinese: "参与"},
-                {english: "recommend", chinese: "推荐"},
-                {english: "specific", chinese: "具体的，特定的"},
-                {english: "technology", chinese: "技术"},
-                {english: "valuable", chinese: "有价值的"},
-                {english: "volunteer", chinese: "志愿者"}
-            ],
-            medium: [
-                {english: "accomplish", chinese: "完成，实现"},
-                {english: "circumstance", chinese: "环境，情况"},
-                {english: "demonstrate", chinese: "证明，展示"},
-                {english: "eliminate", chinese: "消除，排除"},
-                {english: "fundamental", chinese: "基本的，根本的"},
-                {english: "guarantee", chinese: "保证，担保"},
-                {english: "implement", chinese: "实施，执行"},
-                {english: "investigate", chinese: "调查，研究"},
-                {english: "magnificent", chinese: "宏伟的，壮丽的"},
-                {english: "negotiate", chinese: "谈判，协商"},
-                {english: "overcome", chinese: "克服，战胜"},
-                {english: "perspective", chinese: "观点，看法"},
-                {english: "remarkable", chinese: "显著的，非凡的"},
-                {english: "significant", chinese: "重要的，显著的"},
-                {english: "tremendous", chinese: "巨大的，惊人的"},
-                {english: "ultimate", chinese: "最终的，极限的"},
-                {english: "anticipate", chinese: "预期，预料"},
-                {english: "characteristic", chinese: "特征的，典型的"},
-                {english: "controversial", chinese: "有争议的"},
-                {english: "distinguish", chinese: "区分，辨别"},
-                {english: "enthusiasm", chinese: "热情，热忱"},
-                {english: "facilitate", chinese: "促进，使容易"},
-                {english: "inevitable", chinese: "不可避免的"},
-                {english: "mechanism", chinese: "机制，原理"},
-                {english: "optimistic", chinese: "乐观的"},
-                {english: "persistent", chinese: "持续的，坚持的"},
-                {english: "rational", chinese: "理性的"},
-                {english: "sophisticated", chinese: "复杂的，精密的"},
-                {english: "sustainable", chinese: "可持续的"},
-                {english: "theoretical", chinese: "理论的"},
-                {english: "versatile", chinese: "多才多艺的"}
-            ],
-            hard: [
-                {english: "assimilate", chinese: "吸收，同化"},
-                {english: "bureaucracy", chinese: "官僚主义"},
-                {english: "contemplate", chinese: "沉思，考虑"},
-                {english: "deteriorate", chinese: "恶化，退化"},
-                {english: "empirical", chinese: "经验主义的"},
-                {english: "fluctuate", chinese: "波动，变化"},
-                {english: "gratitude", chinese: "感激，谢意"},
-                {english: "hierarchy", chinese: "等级制度"},
-                {english: "imperative", chinese: "必要的，紧急的"},
-                {english: "jurisdiction", chinese: "司法权，管辖权"},
-                {english: "legitimate", chinese: "合法的，正当的"},
-                {english: "manipulate", chinese: "操纵，控制"},
-                {english: "notorious", chinese: "臭名昭著的"},
-                {english: "obsolete", chinese: "过时的，废弃的"},
-                {english: "pragmatic", chinese: "实用的，务实的"},
-                {english: "reciprocal", chinese: "相互的，互惠的"},
-                {english: "autonomous", chinese: "自主的，自治的"},
-                {english: "catastrophic", chinese: "灾难性的"},
-                {english: "deliberate", chinese: "故意的，深思熟虑的"},
-                {english: "exemplify", chinese: "例证，作为...的典型"},
-                {english: "formidable", chinese: "可怕的，难对付的"},
-                {english: "heterogeneous", chinese: "异质的，不同种类的"},
-                {english: "indigenous", chinese: "本土的，原生的"},
-                {english: "meticulous", chinese: "一丝不苟的"},
-                {english: "paradigm", chinese: "范例，模式"},
-                {english: "retrospective", chinese: "回顾的，追溯的"},
-                {english: "spontaneous", chinese: "自发的，自然的"},
-                {english: "tentative", chinese: "暂时的，试验性的"},
-                {english: "unprecedented", chinese: "空前的，前所未有的"},
-                {english: "vindicate", chinese: "证明...正确"},
-                {english: "zealous", chinese: "热心的，热情的"}
-            ]
-        };
+        // 定义全局变量
+        let correctCaptchaResult;
+        let userResult;
 
-        let timer;
-        let timeElapsed = 0;
-        let selectedButtons = {left: null, right: null};
-        let matchedPairs = {left: new Set(), right: new Set()};
-        let gameActive = false;
-        let currentGameWords = {left: [], right: []};
-
-        function startGame() {
-            if(gameActive) return;
-            
-            Swal.fire({
-                title: '选择难度',
-                html: `
-                    <button onclick="Swal.clickConfirm()" class="difficulty-btn" data-difficulty="easy">简单</button>
-                    <button onclick="Swal.clickConfirm()" class="difficulty-btn" data-difficulty="medium">中等</button>
-                    <button onclick="Swal.clickConfirm()" class="difficulty-btn" data-difficulty="hard">困难</button>
-                `,
-                showConfirmButton: false,
-                preConfirm: () => {
-                    return document.querySelector('.difficulty-btn:focus')?.dataset.difficulty || 'medium';
-                }
-            }).then((result) => {
-                if (result.value) {
-                    initializeGame(result.value);
-                }
+        // 控制表单各部分依次显示的动画效果
+        function showFormSections() {
+            const sections = document.querySelectorAll('.form-section');
+            sections.forEach((section, index) => {
+                // 保初始可见
+                section.style.display = 'block';
+                // 添加动画效果
+                setTimeout(() => {
+                    section.style.opacity = "1";
+                    section.style.transform = "translateY(0)";
+                    section.classList.add('visible');
+                }, index * 200);
             });
         }
 
-        function initializeGame(difficulty) {
-            gameActive = true;
-            timeElapsed = 0;
-            matchedPairs = {left: new Set(), right: new Set()};
-            selectedButtons = {left: null, right: null};
-            document.getElementById("time").innerText = timeElapsed;
-            document.getElementById("leftArea").innerHTML = '';
-            document.getElementById("rightArea").innerHTML = '';
-            document.getElementById("startBtn").innerText = "游戏中...";
-            document.getElementById("showAnswerBtn").style.display = "none";
-            startTimer();
-            generateWords(difficulty);
+        // 生成随机验证码（简单加法）
+        function generateCaptcha() {
+            const num1 = Math.floor(Math.random() * 10) + 1;
+            const num2 = Math.floor(Math.random() * 10) + 1;
+            document.getElementById('captchaNum1').textContent = num1;
+            document.getElementById('captchaNum2').textContent = num2;
+            return num1 + num2;
         }
 
-        function startTimer() {
-            timer = setInterval(() => {
-                timeElapsed++;
-                document.getElementById("time").innerText = timeElapsed;
-            }, 1000);
-        }
-
-        function generateWords(difficulty = 'medium') {
-            const wordPool = words[difficulty];
-            const leftWords = [...wordPool].sort(() => 0.5 - Math.random()).slice(0, 6);
-            const rightWords = [...wordPool]
-                .filter(w => !leftWords.includes(w))
-                .sort(() => 0.5 - Math.random())
-                .slice(0, 6);
-            
-            currentGameWords = {left: leftWords, right: rightWords};
-            displayWords(leftWords, 'leftArea', 'left');
-            displayWords(rightWords, 'rightArea', 'right');
-        }
-
-        function displayWords(wordList, areaId, side) {
-            const area = document.getElementById(areaId);
-            const buttons = [];
-            
-            // 创建英文按钮
-            wordList.forEach(word => {
-                const engBtn = document.createElement('button');
-                engBtn.innerText = word.english;
-                engBtn.dataset.pair = word.english;
-                engBtn.dataset.type = 'english';
-                engBtn.onclick = () => handleWordClick(engBtn, side, word);
-                buttons.push(engBtn);
-            });
-
-            // 创建中文按钮
-            wordList.forEach(word => {
-                const cnBtn = document.createElement('button');
-                cnBtn.innerText = word.chinese;
-                cnBtn.dataset.pair = word.english;
-                cnBtn.dataset.type = 'chinese';
-                cnBtn.onclick = () => handleWordClick(cnBtn, side, word);
-                buttons.push(cnBtn);
-            });
-
-            // 随机排序并添加到区域
-            buttons.sort(() => 0.5 - Math.random())
-                .forEach(btn => area.appendChild(btn));
-        }
-
-        function handleWordClick(button, side, word) {
-            if(!gameActive || button.classList.contains('matched')) return;
-
-            if(selectedButtons[side]) {
-                if(selectedButtons[side].dataset.pair === button.dataset.pair && 
-                   selectedButtons[side].dataset.type !== button.dataset.type) {
-                    // 匹配成功
-                    selectedButtons[side].classList.add('matched');
-                    button.classList.add('matched');
-                    matchedPairs[side].add(word.english);
-                    selectedButtons[side] = null;
-                    
-                    if(matchedPairs[side].size === 6) {
-                        gameOver(side);
-                    }
-                } else {
-                    // 不匹配，重置选中状态
-                    selectedButtons[side].style.backgroundColor = '#4CAF50';
-                    selectedButtons[side] = button;
-                    button.style.backgroundColor = '#FFA500';
-                }
-            } else {
-                selectedButtons[side] = button;
-                button.style.backgroundColor = '#FFA500';
+        // 防止重复提：检查localStorage中的标记
+        function checkIfSubmitted() {
+            const hasSubmitted = localStorage.getItem('surveySubmitted');
+            if (hasSubmitted) {
+                document.getElementById('surveyForm-container').style.display = 'none';
+                document.getElementById('alreadySubmitted').style.display = 'block';
+                return true;
             }
+            document.getElementById('surveyForm-container').style.display = 'block';
+            return false;
         }
 
-        function showAnswers() {
-            const answerHtml = `
-                <div class="answer-container">
-                    <div class="answer-side">
-                        <div class="answer-title">左侧答案</div>
-                        ${currentGameWords.left.map(word => `
-                            <div class="answer-pair">
-                                <span class="answer-english">${word.english}</span>
-                                <span class="answer-chinese">${word.chinese}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="answer-side">
-                        <div class="answer-title">右侧答案</div>
-                        ${currentGameWords.right.map(word => `
-                            <div class="answer-pair">
-                                <span class="answer-english">${word.english}</span>
-                                <span class="answer-chinese">${word.chinese}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-
-            Swal.fire({
-                title: '本局游戏答案',
-                html: answerHtml,
-                width: '80%',
-                confirmButtonText: 'ok学废了！'
-            });
+        // 显示成功页面
+        function showSuccessPage() {
+            document.getElementById('surveyForm-container').style.display = 'none';
+            document.getElementById('successPage').style.display = 'block';
+            localStorage.setItem('surveySubmitted', 'true');
         }
 
-        function fireworksEffect() {
-            const duration = 6 * 1000;
-            const animationEnd = Date.now() + duration;
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-            function randomInRange(min, max) {
-                return Math.random() * (max - min) + min;
+        // 页面加载时的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 首先确保表单容器可见
+            const formContainer = document.getElementById('surveyForm-container');
+            if (formContainer) {
+                formContainer.style.display = 'block';
             }
-
-            const interval = setInterval(function() {
-                const timeLeft = animationEnd - Date.now();
-
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-
-                const particleCount = 50 * (timeLeft / duration);
+            
+            // 检查是否已提交
+            if (!checkIfSubmitted()) {
+                showFormSections();
+                correctCaptchaResult = generateCaptcha();
                 
-                confetti(Object.assign({}, defaults, {
-                    particleCount,
-                    origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-                }));
-                confetti(Object.assign({}, defaults, {
-                    particleCount,
-                    origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-                }));
-            }, 250);
+                // 添加验证码输入监听
+                const captchaInput = document.querySelector('input[name="captcha"]');
+                if (captchaInput) {
+                    captchaInput.addEventListener('input', (e) => {
+                        userResult = parseInt(e.target.value);
+                    });
+                }
+
+                // 添加表单输入监听以更新进度条
+                const form = document.getElementById('surveyForm');
+                if (form) {
+                    form.addEventListener('input', updateProgress);
+                }
+            }
+        });
+
+        // 添加提交频率限制
+        const SUBMIT_COOLDOWN = 60000; // 60秒冷却时间
+        let lastSubmitTime = 0;
+
+        function checkSubmitThrottle() {
+            const now = Date.now();
+            if (now - lastSubmitTime < SUBMIT_COOLDOWN) {
+                const remainingTime = Math.ceil((SUBMIT_COOLDOWN - (now - lastSubmitTime)) / 1000);
+                alert(`请等待 ${remainingTime} 秒后再次提交`);
+                return false;
+            }
+            lastSubmitTime = now;
+            return true;
         }
 
-        function gameOver(side) {
-            gameActive = false;
-            clearInterval(timer);
-            document.getElementById("startBtn").innerText = "再来一局";
-            document.getElementById("showAnswerBtn").style.display = "inline-block";
+        // 表单提交处理
+        document.getElementById('surveyForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); // 阻止表单默认提交行为
             
-            const otherSide = side === 'left' ? 'right' : 'left';
+            if (!checkSubmitThrottle()) return;
             
-            // 触发烟花特效
-            fireworksEffect();
+            try {
+                const response = await fetch(e.target.action, {
+                    method: 'POST',
+                    body: new FormData(e.target),
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
 
-            Swal.fire({
-                title: `🎉用时 ${timeElapsed} 秒，${side === 'left' ? '左' : '右'}侧选手获胜！`,
-                text: `用时 ${timeElapsed} 秒`,
-                icon: 'success',
-                confirmButtonText: '再来一局'
+                if (response.ok) {
+                    // 在当前页面显示成功信息
+                    showSuccessPage();
+                } else {
+                    throw new Error('提交失败');
+                }
+            } catch (error) {
+                alert('提交失败，请稍后重试');
+            }
+        });
+
+        // 生成验证码按钮点击事件
+        document.getElementById('generateCaptcha').addEventListener('click', () => {
+            correctCaptchaResult = generateCaptcha();
+        });
+
+        // 添加禁止右键和各种快捷键的处理
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        
+        // 禁用键盘快捷键
+        document.addEventListener('keydown', function(event) {
+            // 禁用 F12 键
+            if(event.keyCode == 123) {
+                event.preventDefault();
+                return false;
+            }
+            // 禁用 Ctrl+Shift+I
+            if(event.ctrlKey && event.shiftKey && event.keyCode == 73) {
+                event.preventDefault();
+                return false;
+            }
+            // 禁用 Ctrl+Shift+C
+            if(event.ctrlKey && event.shiftKey && event.keyCode == 67) {
+                event.preventDefault();
+                return false;
+            }
+            // 禁用 Ctrl+Shift+J
+            if(event.ctrlKey && event.shiftKey && event.keyCode == 74) {
+                event.preventDefault();
+                return false;
+            }
+            // 禁用 Ctrl+U (查看源代码)
+            if(event.ctrlKey && event.keyCode == 85) {
+                event.preventDefault();
+                return false;
+            }
+        });
+
+        // 禁用选择文本
+        document.addEventListener('selectstart', event => event.preventDefault());
+
+        // 添加进度条更新函数
+        function updateProgress() {
+            const form = document.getElementById('surveyForm');
+            const requiredInputs = form.querySelectorAll('input[required], textarea[required], input[type="radio"][required]');
+            let completedInputs = 0;
+            
+            requiredInputs.forEach(input => {
+                // 处理单选按钮
+                if (input.type === 'radio') {
+                    const radioGroup = form.querySelector(`input[name="${input.name}"]:checked`);
+                    if (radioGroup) {
+                        completedInputs++;
+                    }
+                    return;
+                }
+                
+                // 处理其他输入框
+                if (input.value.trim() !== '') {
+                    completedInputs++;
+                }
             });
 
-            if(matchedPairs[otherSide].size < 6) {
-                Swal.fire({
-                    title: `🎉用时 ${timeElapsed} 秒，${otherSide === 'left' ? '左' : '右'}侧选手失败！`,
-                    text: `失败者收到了作者的鼓励：相信你可以的！`,
-                    icon: 'success',
-                    confirmButtonText: '好的呀٩(•̤̀ᵕ•̤́๑)'
-                });
+            // 计算完成百分比
+            const progress = (completedInputs / requiredInputs.length) * 100;
+            
+            // 更新进度条
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) {
+                progressBar.style.width = `${progress}%`;
             }
         }
 
-        document.getElementById("startBtn").onclick = startGame;
-        document.getElementById("showAnswerBtn").onclick = showAnswers;
+        // 确保在页面加载时初始化进度条
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化进度条
+            updateProgress();
+            
+            // 为表单添加输入监听
+            const form = document.getElementById('surveyForm');
+            if (form) {
+                form.addEventListener('input', updateProgress);
+                // 特别处理单选按钮的变化
+                form.addEventListener('change', updateProgress);
+            }
+        });
     </script>
 </body>
-</html>
+</html> 
