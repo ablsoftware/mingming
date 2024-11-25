@@ -1,488 +1,91 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html>
 <head>
-    <!-- 基础元数据设置 -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>问卷调查</title>
-    
-    <!-- 引入外部样式库：
-         - Tailwind CSS：用于快速构建UI
-         - Animate.css：用于添加动画效果 -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>屏幕补光灯</title>
     <style>
-        /* 表单部分的基础样式 */
-        .form-section {
-            display: block;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease-out;
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s;
         }
         
-        /* 可见状态 */
-        .form-section.visible {
-            opacity: 1;
-            transform: translateY(0);
+        #controls {
+            position: fixed;
+            top: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
         }
 
-        /* 隐藏类 */
-        .hidden {
+        #video {
+            width: 320px;
+            height: 240px;
+            transform: scaleX(-1);
             display: none;
         }
 
-        /* 成功页面和已提交提示的默认状态 */
-        #successPage,
-        #alreadySubmitted {
-            display: none;
-        }
-
-        /* 单选按钮选中状态的样式 */
-        .custom-radio input:checked + label {
-            background-color: #4F46E5;
-            color: white;
-        }
-
-        /* 进度条动画效果 */
-        .progress-bar {
-            transition: width 0.3s ease;
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
         }
     </style>
 </head>
-<body class="bg-gray-50" oncontextmenu="return false">
-    <!-- 顶部进度条：显示表单填写进度 -->
-    <div class="fixed top-0 left-0 w-full h-1 bg-gray-200">
-        <div id="progressBar" class="progress-bar h-full bg-indigo-600" style="width: 0%"></div>
+<body>
+    <div id="controls">
+        <button onclick="changeColor('white')">白光</button>
+        <button onclick="changeColor('warm')">暖光</button>
+        <button onclick="changeColor('cold')">冷光</button>
+        <button onclick="toggleCamera()">开关相机</button>
     </div>
-
-    <div class="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-3xl mx-auto">
-            <!-- 问卷表单容器 -->
-            <div id="surveyForm-container" class="block">
-                <!-- 问卷标题 -->
-                <div class="text-center mb-12 animate__animated animate__fadeInDown">
-                    <h1 class="text-4xl font-bold text-gray-900 mb-4">问卷调查</h1>
-                    <p class="text-lg text-gray-600">感谢您参与本次调查，您的反馈对我们非常重要</p>
-                </div>
-
-                <form id="surveyForm" action="https://formspree.io/f/mknegbar" method="POST">
-                    <!-- 添加隐藏字段来处理 AJAX 提交 -->
-                    <input type="hidden" name="_next" value="#"> <!-- 防止跳转 -->
-                    <input type="hidden" name="_format" value="json">
-                    
-                    <!-- 基本信息部分 -->
-                    <div class="form-section mb-10" data-section="1">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">基本信息</h2>
-                        
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    姓名
-                                </label>
-                                <input type="text" name="name" required
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    邮箱
-                                </label>
-                                <input type="email" name="email" required
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    年龄段
-                                </label>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    <div class="custom-radio">
-                                        <input type="radio" id="age1" name="age" value="18-25" class="hidden" required>
-                                        <label for="age1" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            18-25岁
-                                        </label>
-                                    </div>
-                                    <div class="custom-radio">
-                                        <input type="radio" id="age2" name="age" value="26-35" class="hidden">
-                                        <label for="age2" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            26-35岁
-                                        </label>
-                                    </div>
-                                    <div class="custom-radio">
-                                        <input type="radio" id="age3" name="age" value="36-45" class="hidden">
-                                        <label for="age3" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            36-45岁
-                                        </label>
-                                    </div>
-                                    <div class="custom-radio">
-                                        <input type="radio" id="age4" name="age" value="46+" class="hidden">
-                                        <label for="age4" class="block text-center py-2 px-4 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            46岁以上
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 调查问题部分 -->
-                    <div class="form-section mb-10" data-section="2">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-6">调查问题</h2>
-                        
-                        <div class="space-y-8">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-3">
-                                    1. 您对我们的产品满意度如何？
-                                </label>
-                                <div class="flex flex-wrap gap-4">
-                                    <div class="custom-radio">
-                                        <input type="radio" id="satisfaction1" name="satisfaction" value="很满意" class="hidden" required>
-                                        <label for="satisfaction1" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            很满意
-                                        </label>
-                                    </div>
-                                    <div class="custom-radio">
-                                        <input type="radio" id="satisfaction2" name="satisfaction" value="满意" class="hidden">
-                                        <label for="satisfaction2" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            满意
-                                        </label>
-                                    </div>
-                                    <div class="custom-radio">
-                                        <input type="radio" id="satisfaction3" name="satisfaction" value="一般" class="hidden">
-                                        <label for="satisfaction3" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            一般
-                                        </label>
-                                    </div>
-                                    <div class="custom-radio">
-                                        <input type="radio" id="satisfaction4" name="satisfaction" value="不满意" class="hidden">
-                                        <label for="satisfaction4" class="block text-center py-2 px-6 border rounded-md cursor-pointer hover:bg-gray-50">
-                                            不满意
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-3">
-                                    2. 您最看重产品的哪些方面？（可多选）
-                                </label>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" name="aspects[]" value="quality" 
-                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                                        <span>产品质量</span>
-                                    </label>
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" name="aspects[]" value="price"
-                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                                        <span>价格</span>
-                                    </label>
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" name="aspects[]" value="service"
-                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                                        <span>服务</span>
-                                    </label>
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" name="aspects[]" value="design"
-                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                                        <span>设计</span>
-                                    </label>
-                                    <label class="flex items-center space-x-3">
-                                        <input type="checkbox" name="aspects[]" value="brand"
-                                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                                        <span>品牌</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-3">
-                                    3. 您对我们的建议和反馈
-                                </label>
-                                <textarea name="feedback" rows="4" 
-                                          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                          placeholder="请输入您的建议..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 人机验证部分：简单的加法验证 -->
-                    <div class="mb-6">
-                        <div class="flex items-center justify-center space-x-4">
-                            <!-- 验证码计算部分 -->
-                            <div class="flex items-center space-x-2">
-                                <label class="text-sm font-medium text-gray-700">验证码：</label>
-                                <div class="flex items-center space-x-2">
-                                    <span id="captchaNum1" class="text-lg"></span>
-                                    <span class="text-lg">+</span>
-                                    <span id="captchaNum2" class="text-lg"></span>
-                                    <span class="text-lg">=</span>
-                                    <input type="number" 
-                                           name="captcha" 
-                                           required
-                                           class="w-16 px-2 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                </div>
-                            </div>
-
-                            <!-- 刷新验证码按钮 -->
-                            <button type="button" 
-                                    id="generateCaptcha" 
-                                    class="px-4 py-1 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                刷新验证码
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 提交按钮 -->
-                    <div class="text-center">
-                        <button type="submit" 
-                                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
-                            提交问卷
-                            <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                            </svg>
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- 成功页面 -->
-            <div id="successPage" class="hidden animate__animated animate__fadeIn">
-                <div class="text-center py-16 px-4 sm:px-6 lg:px-8">
-                    <!-- 这里替换为你的 logo -->
-                    <svg class="mx-auto h-24 w-24 text-green-500 mb-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    
-                    <h2 class="text-4xl font-bold text-gray-900 mb-8">提交成功！</h2>
-                    <div class="max-w-xl mx-auto">
-                        <p class="text-xl text-gray-600 mb-4">感谢您的参与</p>
-                        <p class="text-lg text-gray-500 mb-12">您的反馈对我们非常重要</p>
-                        
-                        <button onclick="window.location.reload()" 
-                                class="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
-                            返回首页
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 在主容器开始处添加已提交提示 -->
-            <div id="alreadySubmitted" class="hidden animate__animated animate__fadeIn text-center py-16 px-4 sm:px-6 lg:px-8">
-                <svg class="mx-auto h-24 w-24 text-yellow-500 mb-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-                <h2 class="text-4xl font-bold text-gray-900 mb-8">您已经提交过问卷</h2>
-                <p class="text-xl text-gray-600 mb-4">每个浏览器只能提交一次问卷</p>
-                <p class="text-lg text-gray-500 mb-12">感谢您的参与！</p>
-            </div>
-        </div>
-    </div>
+    <video id="video" autoplay></video>
 
     <script>
-        // 定义全局变量
-        let correctCaptchaResult;
-        let userResult;
+        const video = document.getElementById('video');
+        let stream = null;
 
-        // 控制表单各部分依次显示的动画效果
-        function showFormSections() {
-            const sections = document.querySelectorAll('.form-section');
-            sections.forEach((section, index) => {
-                // 保初始可见
-                section.style.display = 'block';
-                // 添加动画效果
-                setTimeout(() => {
-                    section.style.opacity = "1";
-                    section.style.transform = "translateY(0)";
-                    section.classList.add('visible');
-                }, index * 200);
-            });
-        }
-
-        // 生成随机验证码（简单加法）
-        function generateCaptcha() {
-            const num1 = Math.floor(Math.random() * 10) + 1;
-            const num2 = Math.floor(Math.random() * 10) + 1;
-            document.getElementById('captchaNum1').textContent = num1;
-            document.getElementById('captchaNum2').textContent = num2;
-            return num1 + num2;
-        }
-
-        // 防止重复提：检查localStorage中的标记
-        function checkIfSubmitted() {
-            const hasSubmitted = localStorage.getItem('surveySubmitted');
-            if (hasSubmitted) {
-                document.getElementById('surveyForm-container').style.display = 'none';
-                document.getElementById('alreadySubmitted').style.display = 'block';
-                return true;
+        function changeColor(type) {
+            switch(type) {
+                case 'white':
+                    document.body.style.backgroundColor = '#FFFFFF';
+                    break;
+                case 'warm':
+                    document.body.style.backgroundColor = '#FFE4B5';
+                    break;
+                case 'cold':
+                    document.body.style.backgroundColor = '#F0FFFF';
+                    break;
             }
-            document.getElementById('surveyForm-container').style.display = 'block';
-            return false;
         }
 
-        // 显示成功页面
-        function showSuccessPage() {
-            document.getElementById('surveyForm-container').style.display = 'none';
-            document.getElementById('successPage').style.display = 'block';
-            localStorage.setItem('surveySubmitted', 'true');
-        }
-
-        // 页面加载时的初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            // 首先确保表单容器可见
-            const formContainer = document.getElementById('surveyForm-container');
-            if (formContainer) {
-                formContainer.style.display = 'block';
+        async function toggleCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.style.display = 'none';
+                return;
             }
-            
-            // 检查是否已提交
-            if (!checkIfSubmitted()) {
-                showFormSections();
-                correctCaptchaResult = generateCaptcha();
-                
-                // 添加验证码输入监听
-                const captchaInput = document.querySelector('input[name="captcha"]');
-                if (captchaInput) {
-                    captchaInput.addEventListener('input', (e) => {
-                        userResult = parseInt(e.target.value);
-                    });
-                }
 
-                // 添加表单输入监听以更新进度条
-                const form = document.getElementById('surveyForm');
-                if (form) {
-                    form.addEventListener('input', updateProgress);
-                }
-            }
-        });
-
-        // 添加提交频率限制
-        const SUBMIT_COOLDOWN = 60000; // 60秒冷却时间
-        let lastSubmitTime = 0;
-
-        function checkSubmitThrottle() {
-            const now = Date.now();
-            if (now - lastSubmitTime < SUBMIT_COOLDOWN) {
-                const remainingTime = Math.ceil((SUBMIT_COOLDOWN - (now - lastSubmitTime)) / 1000);
-                alert(`请等待 ${remainingTime} 秒后再次提交`);
-                return false;
-            }
-            lastSubmitTime = now;
-            return true;
-        }
-
-        // 表单提交处理
-        document.getElementById('surveyForm').addEventListener('submit', async (e) => {
-            e.preventDefault(); // 阻止表单默认提交行为
-            
-            if (!checkSubmitThrottle()) return;
-            
             try {
-                const response = await fetch(e.target.action, {
-                    method: 'POST',
-                    body: new FormData(e.target),
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user" },
+                    audio: false
                 });
-
-                if (response.ok) {
-                    // 在当前页面显示成功信息
-                    showSuccessPage();
-                } else {
-                    throw new Error('提交失败');
-                }
-            } catch (error) {
-                alert('提交失败，请稍后重试');
-            }
-        });
-
-        // 生成验证码按钮点击事件
-        document.getElementById('generateCaptcha').addEventListener('click', () => {
-            correctCaptchaResult = generateCaptcha();
-        });
-
-        // 添加禁止右键和各种快捷键的处理
-        document.addEventListener('contextmenu', event => event.preventDefault());
-        
-        // 禁用键盘快捷键
-        document.addEventListener('keydown', function(event) {
-            // 禁用 F12 键
-            if(event.keyCode == 123) {
-                event.preventDefault();
-                return false;
-            }
-            // 禁用 Ctrl+Shift+I
-            if(event.ctrlKey && event.shiftKey && event.keyCode == 73) {
-                event.preventDefault();
-                return false;
-            }
-            // 禁用 Ctrl+Shift+C
-            if(event.ctrlKey && event.shiftKey && event.keyCode == 67) {
-                event.preventDefault();
-                return false;
-            }
-            // 禁用 Ctrl+Shift+J
-            if(event.ctrlKey && event.shiftKey && event.keyCode == 74) {
-                event.preventDefault();
-                return false;
-            }
-            // 禁用 Ctrl+U (查看源代码)
-            if(event.ctrlKey && event.keyCode == 85) {
-                event.preventDefault();
-                return false;
-            }
-        });
-
-        // 禁用选择文本
-        document.addEventListener('selectstart', event => event.preventDefault());
-
-        // 添加进度条更新函数
-        function updateProgress() {
-            const form = document.getElementById('surveyForm');
-            const requiredInputs = form.querySelectorAll('input[required], textarea[required], input[type="radio"][required]');
-            let completedInputs = 0;
-            
-            requiredInputs.forEach(input => {
-                // 处理单选按钮
-                if (input.type === 'radio') {
-                    const radioGroup = form.querySelector(`input[name="${input.name}"]:checked`);
-                    if (radioGroup) {
-                        completedInputs++;
-                    }
-                    return;
-                }
-                
-                // 处理其他输入框
-                if (input.value.trim() !== '') {
-                    completedInputs++;
-                }
-            });
-
-            // 计算完成百分比
-            const progress = (completedInputs / requiredInputs.length) * 100;
-            
-            // 更新进度条
-            const progressBar = document.getElementById('progressBar');
-            if (progressBar) {
-                progressBar.style.width = `${progress}%`;
+                video.srcObject = stream;
+                video.style.display = 'block';
+            } catch (err) {
+                alert('无法访问摄像头：' + err.message);
             }
         }
-
-        // 确保在页面加载时初始化进度条
-        document.addEventListener('DOMContentLoaded', () => {
-            // 初始化进度条
-            updateProgress();
-            
-            // 为表单添加输入监听
-            const form = document.getElementById('surveyForm');
-            if (form) {
-                form.addEventListener('input', updateProgress);
-                // 特别处理单选按钮的变化
-                form.addEventListener('change', updateProgress);
-            }
-        });
     </script>
 </body>
 </html> 
